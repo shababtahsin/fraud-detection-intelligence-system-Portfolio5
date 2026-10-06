@@ -327,6 +327,7 @@ fraud-detection-intelligence-system-Portfolio5/
 The main `creditcard.csv` dataset is approximately **150 MB** and is not included in the repository.
 
 It can be downloaded from the Kaggle Credit Card Fraud Detection dataset.
+https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
 
 After downloading it, place it in the project working directory before running the full notebook.
 
