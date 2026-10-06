@@ -1,168 +1,388 @@
-# 🛡️ AI-Driven Fraud Detection System
-### Multi-Modal ML + NLP + Deep Learning Pipeline for Credit Card Fraud, Built on 284,807 Real Transactions
+
+# 🛡️ Credit Card Fraud Detection
+### Machine Learning · Deep Learning · NLP · Streamlit
 
 [![Python](https://img.shields.io/badge/Python-3.10-blue)]()
 [![XGBoost](https://img.shields.io/badge/XGBoost-AUC%200.98-brightgreen)]()
-[![Deployment](https://img.shields.io/badge/Deployed-FastAPI%20%2B%20Streamlit-orange)]()
+[![Streamlit](https://img.shields.io/badge/App-Streamlit-orange)]()
 [![Status](https://img.shields.io/badge/Status-Complete-success)]()
 
 ---
 
-## 📌 TL;DR (for non-technical readers)
+## Project Overview
 
-Banks lose billions every year to credit card fraud. The catch: fraud is **rare** — only 1 in every 578 transactions in this dataset is fraudulent — so a lazy model can just guess "not fraud" every time and still be 99.8% "accurate" while catching zero criminals.
+This project looks at credit card fraud detection using a dataset of **284,807 transactions**.
 
-This project builds a system that actually finds the needle in the haystack. It:
+Only **492 transactions (0.17%)** are fraudulent, which makes this an extreme class-imbalance problem.
 
-- Tests 6 different machine learning approaches and picks the best one (**XGBoost, catching fraud with 0.98 AUC** — near-perfect separation between fraud and legitimate activity)
-- Reads real customer complaint text and pulls sentiment/risk signals out of it, the same way a bank's compliance team would
-- Wraps everything into a **live web app** where you type in transaction details and get an instant fraud probability
+That means accuracy by itself is not very useful. A model could classify almost every transaction as legitimate and still report very high accuracy while failing to identify actual fraud.
 
-**Bottom line: this is a working, end-to-end fraud detection product — not a notebook that stops at a confusion matrix.**
+The project therefore focuses on:
 
----
+- fraud recall
+- precision
+- ROC-AUC
+- class imbalance
+- model comparison
+- sentiment analysis
+- practical model deployment
 
-## 🎯 Business Problem
+Several machine-learning and deep-learning approaches were tested, with **XGBoost producing the strongest overall results**.
 
-Credit card fraud detection is a **needle-in-a-haystack, cost-asymmetric** problem:
-
-| Challenge | Why it matters |
-|---|---|
-| **Extreme class imbalance** | Only 492 of 284,807 transactions (0.17%) are fraudulent |
-| **Asymmetric cost of errors** | A missed fraud costs real money; a false alarm costs customer trust |
-| **Unstructured signal is ignored by most models** | Customer complaints contain early warning signals that pure transaction data misses |
-| **Static rule-based systems age fast** | Fraud patterns shift — the system needs to generalise, not memorise |
-
-**Business question answered:** *Can we build a fraud detection system that materially improves fraud capture without drowning the fraud team in false alarms?*
-
-**Answer: Yes.** The final model achieves **89–91% precision** and **80–82% recall** at a 0.98 AUC — meaning it catches the large majority of fraud while keeping false alarms low enough to be operationally usable.
+A Streamlit application was also built so the trained models can be tested through a simple user interface.
 
 ---
 
-## 🏆 Key Results
+## Business Problem
+
+Fraud detection involves a trade-off.
+
+If the model misses fraudulent transactions, money can be lost.
+
+If it flags too many legitimate transactions, customers may be inconvenienced and investigators may waste time reviewing false alarms.
+
+The main question was:
+
+> Can a model identify a useful proportion of fraudulent transactions without creating an excessive number of false positives?
+
+The dataset makes this difficult because fraud represents only **0.17% of all transactions**.
+
+---
+
+## Dataset
+
+The main dataset is the public **Credit Card Fraud Detection** dataset from Kaggle.
+
+| Metric | Value |
+|---|---:|
+| Transactions | 284,807 |
+| Fraudulent Transactions | 492 |
+| Legitimate Transactions | 284,315 |
+| Fraud Rate | 0.17% |
+| Features | 30 predictors + target |
+
+Most transaction features are anonymised PCA components named `V1` through `V28`.
+
+The dataset also contains:
+
+- `Time`
+- `Amount`
+- `Class`
+
+`Class = 1` represents fraud and `Class = 0` represents a legitimate transaction.
+
+---
+
+## Why Accuracy Is Misleading
+
+Because legitimate transactions make up more than 99% of the dataset, a model could predict almost everything as legitimate and still appear highly accurate.
+
+For this reason, I focused more heavily on:
+
+- **Precision** — how many transactions flagged as fraud were actually fraudulent
+- **Recall** — how much of the actual fraud the model found
+- **F1 Score** — balance between precision and recall
+- **ROC-AUC** — how well the model separates the two classes
+
+---
+
+## Models Tested
+
+The project compares several approaches:
+
+- Logistic Regression
+- K-Nearest Neighbours
+- Decision Tree
+- XGBoost
+- Multi-Layer Perceptron neural network
+- models with an additional sentiment feature
+
+### Model Results
 
 | Model | AUC | Precision | Recall | F1 |
-|---|---|---|---|---|
+|---|---:|---:|---:|---:|
 | Logistic Regression | 0.94 | 0.84 | 0.66 | 0.74 |
 | KNN | 0.91 | 0.90 | 0.74 | 0.81 |
 | Decision Tree | 0.87 | 0.72 | 0.72 | 0.72 |
-| MLP (Deep Learning, baseline) | 0.97 | 0.85 | 0.78 | 0.81 |
+| MLP Baseline | 0.97 | 0.85 | 0.78 | 0.81 |
 | MLP + Sentiment | 0.97 | 0.86 | 0.79 | 0.82 |
 | **XGBoost** | **0.98** | **0.90** | **0.82** | **0.86** |
 | **XGBoost + Sentiment** | **0.98** | **0.91** | **0.82** | **0.86** |
 
-**Winner: XGBoost** — best AUC, best precision/recall trade-off of any model tested, and cheap enough to run in real time. It's also the model wired into the deployed app.
+The best overall model was **XGBoost**, with:
 
-An honest note most portfolio projects leave out: sentiment integration gave only a **marginal** lift here. The complaint-to-transaction mapping is simulated, not a true join key, so I'm not overselling it — the value is in demonstrating the *pipeline*, not claiming the sentiment signal alone moved the needle in this dataset.
+- **0.98 ROC-AUC**
+- approximately **90% precision**
+- approximately **82% recall**
+- **0.86 F1 score**
 
----
-
-## 🧠 What This Project Actually Does
-
-A single unified pipeline spanning **structured ML, deep learning, NLP, multi-agent scoring, and retrieval-augmented generation** — built in 7 phases:
-
-**Phase 1 — Data Import & Exploration**
-Loaded and audited 284,807 transactions × 31 columns; confirmed zero missing values; visualised the fraud/legit class split and the Amount/Time distributions to understand what "normal" looks like before modelling.
-
-**Phase 2 — Classical Machine Learning**
-Trained and benchmarked 4 models (Logistic Regression, KNN, Decision Tree, XGBoost) on a stratified train/test split, then applied **SMOTE** (Synthetic Minority Over-sampling) to fix the class imbalance and re-validated with cross-validation — SMOTE proved essential, without it every model had high accuracy but useless recall.
-
-**Phase 3 — NLP on 5,423 Customer Complaints**
-Cleaned and lemmatised real customer complaint text (lowercasing, punctuation/stopword removal, lemmatization), built a word cloud to surface dominant risk themes, engineered regex-based keyword risk flags, vectorised the corpus with TF-IDF, and ran Named Entity Recognition with spaCy to extract organisations, locations, and monetary entities from complaint text.
-
-**Phase 4 — Deep Learning**
-Built and trained a Multi-Layer Perceptron (MLP) on scaled transaction features as a deep learning baseline — competitive with XGBoost out of the gate, validating that a neural approach was worth pursuing further (a CNN was tested and correctly ruled out as unsuitable for this tabular structure).
-
-**Phase 5 — Sentiment Fusion + Multi-Agent Risk Scoring**
-Trained a sentiment classifier on the complaint corpus, engineered a sentiment feature into the transaction data, and retrained both XGBoost and the MLP with it. Then simulated a **multi-agent system** — independent rule-based "agents" each flag risk from a different angle (amount anomaly, time-of-day, sentiment, model score) — combined into a single interpretable Meta-Risk Score.
-
-**Phase 6 — Retrieval-Augmented Generation (RAG)**
-Built a document store from the cleaned complaint corpus, vectorised it, implemented cosine-similarity retrieval, and connected an LLM (Gemini) layer to generate plain-English explanations for why a transaction was flagged — turning a black-box score into something a compliance analyst can actually read and act on.
-
-**Phase 7 — Model Saving & Deployment**
-Serialized the final models (XGBoost, Logistic Regression, scaler) with joblib, ran sample inference on unseen transactions, exported flagged transactions for review, and shipped a working **FastAPI + Streamlit** application for real-time and batch scoring.
+XGBoost was therefore used as one of the main models in the Streamlit application.
 
 ---
 
-## 🚀 Live Deployment
+## Project Workflow
 
-The repo includes a fully working **Streamlit app** (`streamlit_app.py`) that:
+### 1. Data Exploration
 
-- Loads the trained XGBoost and Logistic Regression models via `joblib`
-- Lets you manually enter transaction features, or one-click load a real **legit** or **fraud** sample transaction
-- Returns fraud probability from both models plus an ensemble score
-- Visualises the model comparison live in-browser
+The first stage was used to understand the dataset before modelling.
+
+This included:
+
+- checking dimensions and data types
+- checking for missing values
+- reviewing the fraud / legitimate class split
+- looking at transaction amounts
+- looking at transaction timing
+- comparing distributions between fraudulent and legitimate transactions
+
+The main issue identified immediately was the extreme class imbalance.
+
+---
+
+### 2. Data Preparation
+
+The data was prepared before model training.
+
+This included:
+
+- separating features and target
+- creating training and test sets
+- scaling transaction amount where required
+- using stratified sampling to preserve the fraud proportion
+- handling class imbalance during model development
+
+**SMOTE** was also tested as part of the imbalance-handling process.
+
+The important point was to avoid judging models on accuracy alone and instead compare their ability to actually find fraudulent cases.
+
+---
+
+### 3. Classical Machine Learning
+
+Four main machine-learning approaches were compared:
+
+- Logistic Regression
+- KNN
+- Decision Tree
+- XGBoost
+
+Each model has different strengths.
+
+Logistic Regression gives a useful interpretable baseline, while XGBoost can capture more complex relationships between the transaction variables.
+
+The models were compared using the same evaluation metrics so that the trade-offs were easier to see.
+
+---
+
+### 4. Deep Learning
+
+A **Multi-Layer Perceptron (MLP)** was also trained on the transaction data.
+
+The MLP achieved competitive results, reaching approximately:
+
+- **0.97 ROC-AUC**
+- **0.78 recall**
+- **0.81 F1**
+
+The neural network performed well, but XGBoost still produced the stronger overall balance of precision and recall for this dataset.
+
+This was a useful reminder that a more complicated model is not automatically the best model.
+
+---
+
+### 5. Sentiment Experiment
+
+The project also includes an NLP and sentiment-analysis experiment.
+
+Customer complaint text was processed to explore whether an additional text-based risk signal could improve fraud classification.
+
+The sentiment work included techniques such as:
+
+- text cleaning
+- token processing
+- TF-IDF
+- sentiment classification
+
+Models were then tested with an additional sentiment feature.
+
+The improvement was small.
+
+For example:
+
+| Model | Without Sentiment | With Sentiment |
+|---|---:|---:|
+| XGBoost Precision | 0.90 | 0.91 |
+| XGBoost Recall | 0.82 | 0.82 |
+| MLP F1 | 0.81 | 0.82 |
+
+This result is important because the complaint data does **not** have a genuine transaction-level join key.
+
+The mapping used for the experiment was simulated, so the sentiment results should be treated as a demonstration of how text features could be added to a fraud workflow rather than evidence that sentiment materially improves this particular fraud dataset.
+
+---
+
+## Streamlit Fraud Detector
+
+The repository includes a working Streamlit application:
+
+`streamlit_app.py`
+
+The app loads the saved:
+
+- Logistic Regression model
+- XGBoost model
+- preprocessing scaler
+
+and allows a user to enter transaction features directly.
+
+It also includes sample buttons for loading:
+
+- a legitimate transaction
+- a fraudulent transaction
+
+The application then returns fraud probabilities from both models.
+
+### Run the App
 
 ```bash
 streamlit run streamlit_app.py
 ```
 
-This isn't a deployment *stub* — it's a runnable interface a non-technical stakeholder (a fraud analyst, a manager) could actually use to test a transaction in seconds.
+The interface is deliberately simple.
+
+Its purpose is to show how a trained model can be moved out of a notebook and placed behind an interface that another user can interact with.
 
 ---
 
-## 🛠️ Tech Stack
+## Saved Models
 
-| Layer | Tools |
+The repository contains trained model files so the models do not need to be retrained every time the application is opened.
+
+```text
+models/
+├── decision_tree.joblib
+├── deep_learning_model.keras
+├── logistic_regression.joblib
+├── mlp_baseline.keras
+├── mlp_with_sentiment.keras
+├── sentiment_logreg.joblib
+├── tfidf_sentiment.joblib
+├── xgboost.joblib
+└── xgboost_with_sentiment.joblib
+```
+
+This also separates model training from model inference.
+
+---
+
+## Tech Stack
+
+| Area | Tools |
 |---|---|
-| Data & ML | Python, Pandas, NumPy, Scikit-learn, XGBoost, imbalanced-learn (SMOTE) |
-| Deep Learning | TensorFlow / Keras (MLP) |
-| NLP | NLTK, spaCy, TF-IDF, WordCloud, TextBlob |
-| Retrieval / RAG | Sentence-Transformers, FAISS, Google Generative AI (Gemini) |
-| Deployment | FastAPI, Streamlit, Uvicorn, Joblib |
-| Validation | Pydantic |
+| Data Analysis | Python · pandas · NumPy |
+| Machine Learning | Scikit-learn · XGBoost · imbalanced-learn |
+| Deep Learning | TensorFlow · Keras |
+| NLP | NLTK · spaCy · TF-IDF · TextBlob |
+| Visualisation | matplotlib · seaborn |
+| Application | Streamlit |
+| Model Storage | Joblib · Keras |
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
+```text
+fraud-detection-intelligence-system-Portfolio5/
+│
+├── Capstone_Project_Fixed FINAL.ipynb
+│   └── Main analysis and modelling notebook
+│
+├── Capstone_Project_Report.docx
+│   └── Written project report
+│
+├── models/
+│   ├── decision_tree.joblib
+│   ├── deep_learning_model.keras
+│   ├── logistic_regression.joblib
+│   ├── mlp_baseline.keras
+│   ├── mlp_with_sentiment.keras
+│   ├── sentiment_logreg.joblib
+│   ├── tfidf_sentiment.joblib
+│   ├── xgboost.joblib
+│   └── xgboost_with_sentiment.joblib
+│
+├── streamlit_app.py
+├── scaler_amount.pkl
+├── scaler_amount_ws.pkl
+├── requirements.txt.txt
+├── .gitignore
+├── LICENSE
+└── README.md
 ```
-├── Capstone_Project_Fixed_FINAL.ipynb   # Full 7-phase analysis notebook
-├── streamlit_app.py                     # Deployed fraud-scoring web app
-├── Customer_Complaints_Sentiment.csv    # NLP source data (5,423 complaints)
-├── requirements.txt                     # Full dependency list
-├── README.md
-└── .gitignore
-```
-
-> **Note on data:** The primary transaction dataset (`creditcard.csv`, ~150MB, 284,807 rows) is excluded from this repo via `.gitignore` due to GitHub's file size limits. It's the standard [Kaggle Credit Card Fraud Detection dataset](https://www.kaggle.com/mlg-ulb/creditcardfraud) (ULB Machine Learning Group) — publicly available, drop it in the working directory to reproduce.
 
 ---
 
-## 📊 Business Impact
+## Data Availability
 
-- Demonstrates a fraud detection approach that can be **operationalised**, not just benchmarked — precision/recall are balanced at a threshold a real fraud team could actually staff against
-- The Meta-Risk Score and RAG explanation layer turn model output into something **auditable and explainable** — critical in a regulated financial services context where "the model said so" isn't an acceptable answer to a regulator
-- Shows the full analyst-to-engineer skill chain: problem framing → EDA → feature engineering → model selection with honest trade-off analysis → deployment
+The main `creditcard.csv` dataset is approximately **150 MB** and is not included in the repository.
+
+It can be downloaded from the Kaggle Credit Card Fraud Detection dataset.
+
+After downloading it, place it in the project working directory before running the full notebook.
 
 ---
 
-## ⚙️ Getting Started
+## What I Learned From This Project
+
+The biggest lesson from the project was that fraud detection is not mainly an accuracy problem.
+
+With a dataset this imbalanced, the more important questions are:
+
+- How much fraud is being detected?
+- How many false alarms are being created?
+- What happens when the decision threshold changes?
+- Is the more complicated model actually better?
+- Can the model be used outside the notebook?
+
+XGBoost performed better than the other models overall, while the sentiment experiment produced only a small improvement.
+
+That difference was useful because it showed why new features and more complicated modelling should be tested rather than assumed to improve performance.
+
+---
+
+## Getting Started
+
+Clone the repository:
 
 ```bash
-# clone the repo
-git clone <your-repo-url>
-cd <repo-name>
+git clone https://github.com/shababtahsin/fraud-detection-intelligence-system-Portfolio5.git
 
-# install dependencies
-pip install -r requirements.txt
+cd fraud-detection-intelligence-system-Portfolio5
+```
 
-# download creditcard.csv from Kaggle and place it in the project directory
+Install the required packages:
 
-# run the notebook for the full analysis, or launch the app directly:
+```bash
+pip install -r requirements.txt.txt
+```
+
+Run the Streamlit application:
+
+```bash
 streamlit run streamlit_app.py
 ```
 
----
+For the full modelling process, open:
 
-## 👤 About This Project
-
-Built by **Shah Tahsin** — a Perth-based Business Data Analyst combining a law background (LLB, University of Manchester), a Master of Management (Curtin University), and a Graduate Certificate in Data Science & AI (Institute of Data / Curtin University). This capstone was completed as part of that program and reflects an end-to-end, portfolio-grade approach: real data, honest model comparison, and a deployed product — not just a notebook.
-
-- 🔗 LinkedIn: [add your URL]
-- 🔗 Portfolio / GitHub: [add your URL]
-- 📧 Contact: [add your email]
+```text
+Capstone_Project_Fixed FINAL.ipynb
+```
 
 ---
 
-*If you're a recruiter or hiring manager: this project is one of five in my portfolio, spanning SQL Server, Power BI, Python, and MySQL across credit risk, retail analytics, procurement, and fraud domains. Happy to walk through the full technical decision-making on a call.*
+## Author
+
+**Shah Tahsin**  
+Business Data Analyst | SQL · Python · Power BI
+
+[GitHub](https://github.com/shababtahsin)
